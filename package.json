@@ -1,0 +1,24 @@
+{
+  "name": "yog-bigpipe",
+  "version": "0.0.1",
+  "description": "An express.js middleware for fis widget pipline output.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fex-team/yog-bigpipe.git"
+  },
+  "keywords": [
+    "fis",
+    "bigpipe",
+    "middleware"
+  ],
+  "author": "fex-team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fex-team/yog-bigpipe/issues"
+  },
+  "homepage": "https://github.com/fex-team/yog-bigpipe"
+}
