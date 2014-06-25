@@ -8,7 +8,7 @@ module.exports = function( options ) {
         var pagelets = req.param('pagelets');
         var destroy = function() {
             res.removeListener('finish', destroy);
-            res.removeListener('close', destroy);
+            //res.removeListener('close', destroy);
 
             bigpipe.destroy();
             bigpipe = res.bigpipe = null;
@@ -22,7 +22,7 @@ module.exports = function( options ) {
         bigpipe.addQuicklingPagelets(pagelets);
 
         res.on('finish', destroy);
-        res.on('close', destroy);
+        //res.on('close', destroy);
 
         next();
     }
