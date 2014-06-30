@@ -167,7 +167,10 @@
                     }
                 }
 
-                dom = data.container || document.getElementById(data.id);
+                dom = data.container && typeof data.container === 'string' ?
+                        document.getElementById(data.container) :
+                        (data.container || document.getElementById(data.id));
+
                 dom.innerHTML = data.html;
 
                 onDomInserted();
