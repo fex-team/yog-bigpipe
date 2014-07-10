@@ -21,6 +21,9 @@ module.exports = function( options ) {
         pagelet && pagelets.push(pagelet);
         bigpipe.addQuicklingPagelets(pagelets);
 
+        res.locals = res.locals || {};
+        res.locals.isQuickingMode = bigpipe.isQuickingMode();
+
         res.on('finish', destroy);
         //res.on('close', destroy);
 
