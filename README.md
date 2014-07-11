@@ -2,6 +2,7 @@ yog-bigpipe
 ===========
 
 [![Build Status](https://travis-ci.org/fex-team/yog-bigpipe.svg?branch=master)](https://travis-ci.org/fex-team/yog-bigpipe)
+[![Coverage Status](https://coveralls.io/repos/fex-team/yog-bigpipe/badge.png)](https://coveralls.io/r/fex-team/yog-bigpipe)
 
 An express.js middleware for fis widget pipline output.
 
