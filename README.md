@@ -1,6 +1,8 @@
 yog-bigpipe 
 ===========
 
+[![Build Status](https://travis-ci.org/fex-team/yog-bigpipe.svg?branch=master)](https://travis-ci.org/fex-team/yog-bigpipe)
+
 An express.js middleware for fis widget pipline output.
 
 This middleware is bundled in [yog](https://github.com/fex-team/yog).
