@@ -21,7 +21,7 @@ module.exports = function( options ) {
         pagelet && pagelets.push(pagelet);
         bigpipe.addQuicklingPagelets(pagelets);
 
-        res.locals = res.locals || {};
+        // res.locals 肯定是一个对象，不信可以去查看 express/middleware/init
         res.locals.isQuickingMode = bigpipe.isQuickingMode();
 
         res.on('finish', destroy);
