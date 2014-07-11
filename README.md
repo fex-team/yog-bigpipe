@@ -37,6 +37,8 @@ router.get('/', function(req, res) {
             });
         }, 2000);
     });
+
+    res.render('page/index.tpl');
 });
 
 ```
