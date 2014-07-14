@@ -795,6 +795,44 @@ describe('render error', function() {
                 done('error');
             });
     });
+
+    it('compiled', function(done) {
+        var app = express();
+        
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.id %>'
+            }
+        }));
+
+        app.use(function(req, res) {
+            var bigpipe = res.bigpipe;
+
+            bigpipe.addPagelet({
+                id: 'pageletA',
+                mode: 'async',
+                locals: {
+                    key: '123'
+                },
+                compiled: function() {
+                    throw new Error('error occer');
+                    return 'whatever';
+                }
+            });
+
+            bigpipe.on('error', function(err) {
+                assert.equal(err.message, 'error occer');
+            });
+
+            bigpipe.pipe(res);
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function(err, res) {
+                done();
+            });
+    });
 });
 
 
