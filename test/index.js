@@ -200,7 +200,7 @@ describe('render', function() {
             .get('/')
             .end(function(err, res) {
                 if (err) return done(err);
-                
+
                 assert.equal(res.text, '<script type="text/javascript">BigPipe.onPageletArrive({"container":"","id":"pageletA","html":"the result is value A","js":[],"css":[],"styles":[],"scripts":[]});</script>');
                 done();
             });
@@ -249,7 +249,6 @@ describe('render', function() {
             });
     });
 });
-
 
 describe('render template', function() {
     
@@ -323,14 +322,14 @@ describe('render event', function() {
                 }
             });
 
-            bigpipe.on('before-pagelet-render', function(pagelet, locals) {
+            bigpipe.on('pagelet:render:before', function(pagelet, locals) {
                 assert.equal(pagelet.id, 'pageletA');
                 assert.equal(locals.key, '123');
                 locals.key2 = '456';
                 actually++;
             });
 
-            bigpipe.on('after-pagelet-render', function(pagelet, locals) {
+            bigpipe.on('pagelet:render:after', function(pagelet, locals) {
                 assert.equal(pagelet.id, 'pageletA');
                 assert.equal(locals.key, '123');
                 assert.equal(locals.key2, '456');
@@ -631,7 +630,7 @@ describe('Provider', function() {
     });
 
 
-    it('prepare-pagelet-source', function(done) {
+    it('prepare:source', function(done) {
         var app = express();
         
         app.use(middleware({
@@ -651,7 +650,7 @@ describe('Provider', function() {
                 }
             });
 
-            bigpipe.on('prepare-pagelet-source', function(id, setter) {
+            bigpipe.on('pagelet:source', function(id, setter) {
                 assert.equal(id, 'pageletA');
                 setter(function(next) {
                     next(null, {content: 'test123'});
@@ -822,6 +821,7 @@ describe('render error', function() {
 
             bigpipe.on('error', function(err) {
                 assert.equal(err.message, 'error occer');
+                done();
             });
 
             bigpipe.pipe(res);
@@ -830,7 +830,7 @@ describe('render error', function() {
         request(app.listen())
             .get('/')
             .end(function(err, res) {
-                done();
+                done('This should not run');
             });
     });
 });
@@ -862,7 +862,7 @@ describe('render js/css analyse', function() {
                 }
             });
 
-            bigpipe.on('pagelet-done', function(pagelet) {
+            bigpipe.on('pagelet:after', function(pagelet) {
                 pagelet.scripts.should.have.property(0, 'embed script');
                 pagelet.styles.should.have.property(0, 'embed css');
                 pagelet.js.should.have.property(0, 'js file');
@@ -909,14 +909,14 @@ describe('render js/css analyse', function() {
                 }
             });
 
-            bigpipe.on('after-pagelet-render', function(pagelet) {
+            bigpipe.on('pagelet:analyse:before', function(pagelet) {
                 pagelet.addStyle('embed css 2');
                 pagelet.addScript('embed script 2');
                 pagelet.addJs('js file 2');
                 pagelet.addCss('css file 2');
             });
 
-            bigpipe.on('pagelet-done', function(pagelet) {
+            bigpipe.on('pagelet:after', function(pagelet) {
                 pagelet.scripts.should.have.property(1, 'embed script');
                 pagelet.scripts.should.have.property(0, 'embed script 2');
                 pagelet.styles.should.have.property(1, 'embed css');
@@ -967,7 +967,7 @@ describe('render js/css analyse', function() {
                 }
             });
 
-            bigpipe.on('pagelet-done', function(pagelet) {
+            bigpipe.on('pagelet:after', function(pagelet) {
                 pagelet.scripts.should.have.property(0, 'embed script');
                 pagelet.styles.should.have.property(0, 'embed css');
                 pagelet.js.should.have.property(0, 'js file');
@@ -1011,14 +1011,14 @@ describe('render js/css analyse', function() {
                 }
             });
 
-            bigpipe.on('after-pagelet-render', function(pagelet) {
+            bigpipe.on('pagelet:render:before', function(pagelet) {
                 pagelet.addStyle(['embed css', 'embed css 2']);
                 pagelet.addScript(['embed script', 'embed script 2']);
                 pagelet.addJs(['js file', 'js file 2']);
                 pagelet.addCss(['css file', 'css file 2']);
             });
 
-            bigpipe.on('pagelet-done', function(pagelet) {
+            bigpipe.on('pagelet:after', function(pagelet) {
                 pagelet.scripts.should.have.property(0, 'embed script');
                 pagelet.scripts.should.have.property(1, 'embed script 2');
                 pagelet.styles.should.have.property(0, 'embed css');
@@ -1220,7 +1220,7 @@ describe('some incorrect usage.', function() {
                 }
             });
 
-            bigpipe.on('pagelet-done', function(pagelet) {
+            bigpipe.on('pagelet:after', function(pagelet) {
                 pagelet.start();
             });
 
