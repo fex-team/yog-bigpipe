@@ -27,7 +27,7 @@ And in your controller, you can assign async data like this.
 router.get('/', function(req, res) {
 
     // pagelet Id
-    res.bind('jumbotron', fuction(setter) {
+    res.bigpipe.bind('jumbotron', fuction(setter) {
 
         // simulate an async progress
         setTimeout(function() {
