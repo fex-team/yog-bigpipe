@@ -345,8 +345,9 @@
                 else {
                     dom.innerHTML = data.html;
                 }
-
-                onDomInserted();
+                setTimeout(function () {
+                    onDomInserted(data);
+                }, 0);
             };
 
             var loadJs = function (callback) {
@@ -391,6 +392,8 @@
             pagelets = [],
             /* registered pagelets */
             currentPagelet = null,
+            currReqID = null,
+            cache = {},
             globalBigPipeLoadIndex = 0;
 
         return {
@@ -400,22 +403,27 @@
             // - after chunk output pagelet.
             // - after async load quickling pagelet.
             onPageletArrive: function (obj) {
+                currReqID = obj.reqID;
+                // console.log('arrive', obj.id);
                 this.trigger('pageletarrive', obj);
 
                 var pagelet = PageLet(obj, function () {
+                    // console.log('dom ready', obj.id);
                     var item;
-
+                    count--;
                     // enforce js executed after dom inserted.
-                    if (!--count) {
+                    if (count === 0) {
                         while ((item = pagelets.shift())) {
-                            BigPipe.trigger('pageletinsert', pagelet, obj);
+                            BigPipe.trigger('pageletinsert', pagelet, item.pageletData);
+                            // console.log('pagelet exec js', item.pageletData.id);
                             item.loadJs(function () {
-                                BigPipe.trigger('pageletdone', pagelet, obj);
+                                // console.log('pagelet exec done', item.pageletData.id);
+                                BigPipe.trigger('pageletdone', pagelet, item.pageletData);
                             });
                         }
                     }
                 });
-
+                pagelet.pageletData = obj;
                 pagelets.push(pagelet);
                 count++;
                 pagelet.loadCss();
@@ -451,7 +459,8 @@
                 var currentPageUrl = location.href;
                 var containers = {};
                 var pageletRequestID = globalBigPipeLoadIndex++;
-                var obj, i, id, cb, remaining, search, url, param, container;
+                var obj, i, id, cb, remaining = 0,
+                    search, url, param, container;
 
                 // convert arguments.
                 // so we can accept
@@ -474,9 +483,7 @@
                         (pagelets = pagelets.split(/\s*,\s*/));
                 }
 
-                remaining = pagelets.length;
-
-                for (i = remaining - 1; i >= 0; i--) {
+                for (i = pagelets.length - 1; i >= 0; i--) {
                     id = pagelets[i];
                     args.push('pagelets[]=' + id);
                     container = obj.container && obj.container[id] || obj.container;
@@ -485,9 +492,14 @@
                 args.push('reqID=' + pageletRequestID);
 
                 function onPageArrive(data) {
-                    var id = data.id;
-                    containers[id] && (data.container = containers[id]);
-                    data.extend = obj.extend;
+                    // !data.reqID 用于兼容老版本未返回reqID的情况
+                    if (data.reqID === undefined || data.reqID === pageletRequestID) {
+                        var id = data.id;
+                        // console.log('req', data.reqID, 'pagelet', data.id, 'arrive');
+                        remaining++;
+                        containers[id] && (data.container = containers[id]);
+                        data.extend = obj.extend;
+                    }
                 }
 
                 BigPipe.on('pageletarrive', onPageArrive);
@@ -502,7 +514,9 @@
                     // !res.reqID 用于兼容老版本未返回reqID的情况
                     if (res.reqID === undefined || res.reqID === pageletRequestID) {
                         remaining--;
+                        // console.log('req', res.reqID, 'pagelet', res.id, 'done');
                         if (remaining === 0) {
+                            // console.log('req', res.reqID, 'done');
                             BigPipe.off('pageletdone', arguments.callee);
                             BigPipe.off('pageletarrive', onPageArrive);
                             obj.cb && obj.cb();
@@ -510,14 +524,29 @@
                     }
                 });
 
-                Util.ajax(url, function (res) {
-                    // if the page url has been moved.
-                    if (currentPageUrl !== location.href) {
-                        return;
-                    }
+                // console.log('req', pageletRequestID, url, 'start');
 
-                    Util.globalEval(res);
-                });
+                if (cache[obj.cacheID]) {
+                    var requestCache = cache[obj.cacheID];
+                    // 同步requestID
+                    pageletRequestID = requestCache.reqID;
+                    Util.globalEval(requestCache.content);
+                }
+                else {
+                    Util.ajax(url, function (res) {
+                        // if the page url has been moved.
+                        if (currentPageUrl !== location.href) {
+                            return;
+                        }
+                        Util.globalEval(res);
+                        if (obj.cacheID) {
+                            cache[obj.cacheID] = {
+                                content: res,
+                                reqID: currReqID
+                            };
+                        }
+                    });
+                }
             }
         };
     }();

@@ -71,8 +71,8 @@ describe('bigpipe quickling filter', function () {
         app.use(function (req, res, next) {
             var bigpipe = res.bigpipe;
 
-            assert.ok(bigpipe.isQuickingMode());
-            assert.ok(res.locals.isQuickingMode);
+            assert.ok(bigpipe.isQuicklingMode());
+            assert.ok(res.locals.isQuicklingMode);
 
             bigpipe.quicklings.should.have.property(0, 'pageletA');
 
@@ -98,8 +98,8 @@ describe('bigpipe quickling filter', function () {
         app.use(function (req, res, next) {
             var bigpipe = res.bigpipe;
 
-            assert.ok(bigpipe.isQuickingMode());
-            assert.ok(res.locals.isQuickingMode);
+            assert.ok(bigpipe.isQuicklingMode());
+            assert.ok(res.locals.isQuicklingMode);
 
             bigpipe.quicklings.should.have.property(0, 'pageletA');
 
@@ -125,8 +125,8 @@ describe('bigpipe quickling filter', function () {
         app.use(function (req, res, next) {
             var bigpipe = res.bigpipe;
 
-            assert.ok(bigpipe.isQuickingMode());
-            assert.ok(res.locals.isQuickingMode);
+            assert.ok(bigpipe.isQuicklingMode());
+            assert.ok(res.locals.isQuicklingMode);
 
             bigpipe.quicklings.should.have.property(0, 'pageletA');
 
@@ -152,8 +152,8 @@ describe('bigpipe quickling filter', function () {
         app.use(function (req, res, next) {
             var bigpipe = res.bigpipe;
 
-            assert.ok(bigpipe.isQuickingMode());
-            assert.ok(res.locals.isQuickingMode);
+            assert.ok(bigpipe.isQuicklingMode());
+            assert.ok(res.locals.isQuicklingMode);
 
             bigpipe.quicklings.should.have.property(0, 'pageletA');
             bigpipe.quicklings.should.have.property(1, 'pageletB');
