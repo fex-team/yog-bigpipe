@@ -546,7 +546,7 @@ describe('render quickling', function () {
             .end(function (err, res) {
                 if (err) return done(err);
 
-                assert.equal(res.text, '');
+                assert.equal(res.text, 'pageletA');
                 done();
             });
     });
