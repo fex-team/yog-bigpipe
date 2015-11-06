@@ -31,5 +31,5 @@ module.exports = function (options) {
         //res.on('close', destroy);
 
         next();
-    }
-}
+    };
+};
