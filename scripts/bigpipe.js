@@ -285,6 +285,7 @@
     var Util = root.BigPipeUtil;
     var Event = root.BigPipeEvent;
     var BigPipe = function () {
+        var insertQueue = [];
 
         // The order of render pagelet.
         // - load css
@@ -305,19 +306,40 @@
         // onDomInserted called when dom inserted.
         function PageLet(data, onDomInserted) {
             var remaining = 0;
+            var item = {
+                cssLoaded: false,
+                finish: function () {
+                    insertDom();
+                }
+            };
 
             var loadCss = function () {
+                insertQueue.push(item);
                 // load css
                 if (data.css && data.css.length) {
                     remaining = data.css.length;
                     for (var i = 0, len = remaining; i < len; i++) {
                         Util.loadCss(data.css[i], BigPipe.ignoreDuplicate, function () {
-                            --remaining || insertDom();
+                            --remaining;
+                            if (remaining === 0) {
+                                item.cssLoaded = true;
+                                finishInsertQueue();
+                            }
                         });
                     }
                 }
                 else {
-                    insertDom();
+                    item.cssLoaded = true;
+                    finishInsertQueue();
+                }
+            };
+
+            var finishInsertQueue = function () {
+                var item = insertQueue[0];
+                while (item && item.cssLoaded) {
+                    insertQueue.shift();
+                    item.finish();
+                    item = insertQueue[0];
                 }
             };
 
@@ -352,8 +374,8 @@
 
             var loadJs = function (callback) {
                 var len = data.js && data.js.length;
-                var remaining = len,
-                    i;
+                var remaining = len;
+                var i;
 
                 // exec data.scripts
                 var next = function () {
@@ -391,7 +413,6 @@
         var count = 0,
             pagelets = [],
             /* registered pagelets */
-            currentPagelet = null,
             currReqID = null,
             cache = {},
             globalBigPipeLoadIndex = 0;
@@ -406,8 +427,7 @@
                 currReqID = obj.reqID;
                 // console.log('arrive', obj.id);
                 this.trigger('pageletarrive', obj);
-
-                var pagelet = PageLet(obj, function () {
+                var pagelet = new PageLet(obj, function () {
                     // console.log('dom ready', obj.id);
                     var item;
                     count--;
@@ -416,10 +436,10 @@
                         while ((item = pagelets.shift())) {
                             BigPipe.trigger('pageletinsert', pagelet, item.pageletData);
                             // console.log('pagelet exec js', item.pageletData.id);
-                            item.loadJs(function () {
+                            item.loadJs((function (item) {
                                 // console.log('pagelet exec done', item.pageletData.id);
                                 BigPipe.trigger('pageletdone', pagelet, item.pageletData);
-                            });
+                            })(item));
                         }
                     }
                 });
