@@ -136,7 +136,12 @@
 
         xhr.onreadystatechange = function () {
             if (this.readyState == 4) {
-                cb(this.responseText);
+                if (this.status !== 200) {
+                    cb(this.responseText);
+                }
+                else {
+                    cb(null, this.responseText);
+                }
             }
         };
         xhr.open(data ? 'POST' : 'GET', url + '&t=' + (new Date()).getTime(), true);
@@ -469,6 +474,7 @@
             // params:
             //   - pagelets       pagelet id or array of pagelet id.
             //   - param          extra params for the ajax call.
+            //   - search         replace location.search for the ajax call, without '?'.
             //   - container      by default, the pagelet will be rendered in
             //                    some document node with the same id. With this
             //                    option the pagelet can be renndered in
@@ -524,11 +530,17 @@
 
                 BigPipe.on('pageletarrive', onPageArrive);
                 obj.search && args.push(obj.search);
+                obj.param && args.push(obj.param);
                 if (obj.url) {
                     url = obj.url + (obj.url.indexOf('?') === -1 ? '?' : '&') + args.join('&');
                 }
                 else {
-                    url = (location.search ? location.search + '&' : '?') + args.join('&');
+                    if (!obj.search) {
+                        url = (location.search ? location.search + '&' : '?') + args.join('&');
+                    }
+                    else {
+                        url = '?' + args.join('&');
+                    }
                 }
                 BigPipe.on('pageletdone', function (pagelet, res) {
                     // !res.reqID 用于兼容老版本未返回reqID的情况
@@ -553,7 +565,10 @@
                     Util.globalEval(requestCache.content);
                 }
                 else {
-                    Util.ajax(url, function (res) {
+                    Util.ajax(url, function (err, res) {
+                        if (err) {
+                            return obj.cb && obj.cb(err);
+                        }
                         // if the page url has been moved.
                         if (currentPageUrl !== location.href) {
                             return;
