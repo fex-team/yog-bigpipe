@@ -29,5 +29,8 @@
     "express": "~4.4.5",
     "supertest": "~0.13.0",
     "should": "~4.0.4"
+  },
+  "dependencies": {
+    "bluebird": "3.0.6"
   }
 }
