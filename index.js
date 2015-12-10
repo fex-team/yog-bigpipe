@@ -3,6 +3,7 @@ var BigPipe = require('./lib/bigpipe.js');
 module.exports = function (options) {
 
     return function (req, res, next) {
+        options = options || {};
         var bigpipe = res.bigpipe = new BigPipe(options);
         var pagelet = req.query.pagelet;
         var pagelets = req.query.pagelets;
@@ -24,6 +25,8 @@ module.exports = function (options) {
 
         // res.locals 肯定是一个对象，不信可以去查看 express/middleware/init
         res.locals.isQuicklingMode = bigpipe.isQuicklingMode();
+        // 检查是否是爬虫模式
+        bigpipe.isSpiderMode = options.isSpiderMode ? options.isSpiderMode(req) : false;
         // 拼写兼容
         res.locals.isQuickingMode = res.locals.isQuicklingMode;
 

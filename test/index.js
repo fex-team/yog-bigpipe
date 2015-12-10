@@ -678,7 +678,7 @@ describe('Provider', function () {
     });
 
 
-    it('onPagelt', function (done) {
+    it.skip('onPagelt', function (done) {
         var app = express();
 
         app.use(middleware({
@@ -719,7 +719,7 @@ describe('Provider', function () {
             });
     });
 
-    it('onPageltXXX', function (done) {
+    it.skip('onPageltXXX', function (done) {
         var app = express();
 
         app.use(middleware({
@@ -768,7 +768,7 @@ describe('render error', function () {
 
         app.use(middleware({
             tpl: {
-                _default: '<%= this.id %>'
+                _default: '<%= this.html %>'
             }
         }));
 
@@ -781,8 +781,8 @@ describe('render error', function () {
                 locals: {
                     key: '123'
                 },
-                compiled: function () {
-                    return 'whatever';
+                compiled: function (locals) {
+                    return 'BigPipeFailed: ' + locals.BigPipeFailed;
                 }
             });
 
@@ -790,10 +790,10 @@ describe('render error', function () {
                 setter('error occer');
             });
 
-            bigpipe.on('error', function (reason) {
-                assert.equal(reason, 'error occer');
-                done();
-            });
+            // bigpipe.on('error', function (reason) {
+            //     assert.equal(reason, 'error occer');
+            //     done();
+            // });
 
             bigpipe.pipe(res);
         });
@@ -802,7 +802,8 @@ describe('render error', function () {
             .get('/')
             .end(function (err, res) {
                 if (err) return done(err);
-                done('error');
+                assert.equal(res.text, 'BigPipeFailed: true');
+                done();
             });
     });
 
