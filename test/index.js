@@ -333,6 +333,104 @@ describe('prepareAllSources', function () {
                 done();
             });
     });
+
+    it('should pass * to bind.all', function (done) {
+        var app = express();
+
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.html %>'
+            }
+        }));
+        app.use(function (req, res) {
+            var afterPrepare = false;
+            res.bigpipe.bind('all', function (id) {
+                return new Promise(function (resolve) {
+                    assert.equal(afterPrepare, false);
+                    if (id === '*') {
+                        resolve({
+                            pageletA: {
+                                msg: 'Hello world!'
+                            }
+                        });
+                    }
+                    else {
+                        resolve({
+                            msg: 'Hello world!'
+                        });
+                    }
+                });
+            });
+            var b = res.bigpipe.prepareAllSources();
+            b.then(function () {
+                afterPrepare = true;
+                assert.equal(res.bigpipe.pageletData.pageletA.msg, 'Hello world!');
+                res.end();
+            }).catch(console.error.bind(console));
+
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function (err, res) {
+                if (err) return done(err);
+                assert.equal(res.text, '');
+                done();
+            });
+    });
+
+    it.skip('should pass * to pagelet:source', function (done) {
+        var app = express();
+
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.html %>'
+            }
+        }));
+        app.use(function (req, res) {
+            var afterPrepare = false;
+            res.bigpipe.on('pagelet:source', function (id, setter) {
+                setter(function () {
+                    return new Promise(function (resolve) {
+                        assert.equal(afterPrepare, false);
+                        if (id === '*') {
+                            resolve({
+                                pageletA: {
+                                    msg: 'Hello world!'
+                                }
+                            });
+                        }
+                        else {
+                            resolve({
+                                msg: 'Hello world!'
+                            });
+                        }
+                    });
+                });
+            });
+            res.bigpipe.addPagelet({
+                id: 'pageletA',
+                mode: 'async',
+                compiled: function () {
+                    return 'whatever';
+                }
+            });
+            res.bigpipe.prepareAllSources().then(function () {
+                afterPrepare = true;
+                assert.equal(res.bigpipe.pageletData.pageletA.msg, 'Hello world!');
+                res.end();
+            }).catch(console.error.bind(console));
+
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function (err, res) {
+                if (err) return done(err);
+                assert.equal(res.text, '');
+                done();
+            });
+    });
 });
 
 describe('render template', function () {
@@ -718,7 +816,7 @@ describe('Provider', function () {
             });
     });
 
-    it('prepare:source', function (done) {
+    it.skip('pagelet:source', function (done) {
         var app = express();
 
         app.use(middleware({
