@@ -3,6 +3,7 @@ var middleware = require('..');
 var express = require('express');
 var should = require('should');
 var request = require('supertest');
+var Promise = require('bluebird');
 
 describe('middleware initialize', function () {
 
