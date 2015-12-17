@@ -1,6 +1,6 @@
 {
   "name": "yog-bigpipe",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "An express.js middleware for fis widget pipline output.",
   "main": "index.js",
   "scripts": {
