@@ -3,6 +3,7 @@ var middleware = require('..');
 var express = require('express');
 var should = require('should');
 var request = require('supertest');
+var Promise = require('bluebird');
 
 describe('middleware initialize', function () {
 
@@ -245,6 +246,189 @@ describe('render', function () {
                 if (err) return done(err);
 
                 assert.equal(res.text, '<script type="text/javascript">BigPipe.onPageletArrive({"container":"","reqID":null,"id":"pageletA","html":"the result is value A","js":[],"css":[],"styles":[],"scripts":[]});</script><script type="text/javascript">BigPipe.onPageletArrive({"container":"","reqID":null,"id":"pageletB","html":"the result is value B","js":[],"css":[],"styles":[],"scripts":[]});</script>');
+                done();
+            });
+    });
+});
+
+describe('prepareAllSources', function () {
+    it('should finish pagelet data', function (done) {
+        var app = express();
+
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.html %>'
+            }
+        }));
+        app.use(function (req, res) {
+            var afterPrepare = false;
+            res.bigpipe.bind('pageletA', function () {
+                return new Promise(function (resolve) {
+                    assert.equal(afterPrepare, false);
+                    resolve({
+                        msg: 'Hello world!'
+                    });
+                });
+            });
+            res.bigpipe.prepareAllSources().then(function () {
+                afterPrepare = true;
+                res.bigpipe.addPagelet({
+                    id: 'pageletA',
+                    mode: 'async',
+                    compiled: function (locals) {
+                        return 'BigPipeFailed: ' + !!locals.BigPipeFailed;
+                    }
+                });
+                res.bigpipe.pipe(res);
+            });
+
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function (err, res) {
+                if (err) return done(err);
+                assert.equal(res.text, 'BigPipeFailed: false');
+                done();
+            });
+    });
+
+    it('should render pagelet in sync', function (done) {
+        var app = express();
+
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.html %>'
+            }
+        }));
+        app.use(function (req, res) {
+            var afterPrepare = false;
+            res.bigpipe.bind('pageletA', function () {
+                return new Promise(function (resolve) {
+                    assert.equal(afterPrepare, false);
+                    resolve({
+                        msg: 'Hello world!'
+                    });
+                });
+            });
+            res.bigpipe.prepareAllSources().then(function () {
+                afterPrepare = true;
+                var pagelet = new res.bigpipe.Pagelet({
+                    id: 'pageletA',
+                    mode: 'async',
+                    compiled: function (locals) {
+                        return 'BigPipeFailed: ' + !!locals.BigPipeFailed;
+                    }
+                });
+                pagelet.start(res.bigpipe.pageletData.pageletA, true);
+                res.end(pagelet.html);
+            });
+
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function (err, res) {
+                if (err) return done(err);
+                assert.equal(res.text, 'BigPipeFailed: false');
+                done();
+            });
+    });
+
+    it('should pass * to bind.all', function (done) {
+        var app = express();
+
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.html %>'
+            }
+        }));
+        app.use(function (req, res) {
+            var afterPrepare = false;
+            res.bigpipe.bind('all', function (id) {
+                return new Promise(function (resolve) {
+                    assert.equal(afterPrepare, false);
+                    if (id === '*') {
+                        resolve({
+                            pageletA: {
+                                msg: 'Hello world!'
+                            }
+                        });
+                    }
+                    else {
+                        resolve({
+                            msg: 'Hello world!'
+                        });
+                    }
+                });
+            });
+            var b = res.bigpipe.prepareAllSources();
+            b.then(function () {
+                afterPrepare = true;
+                assert.equal(res.bigpipe.pageletData.pageletA.msg, 'Hello world!');
+                res.end();
+            }).catch(console.error.bind(console));
+
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function (err, res) {
+                if (err) return done(err);
+                assert.equal(res.text, '');
+                done();
+            });
+    });
+
+    it.skip('should pass * to pagelet:source', function (done) {
+        var app = express();
+
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.html %>'
+            }
+        }));
+        app.use(function (req, res) {
+            var afterPrepare = false;
+            res.bigpipe.on('pagelet:source', function (id, setter) {
+                setter(function () {
+                    return new Promise(function (resolve) {
+                        assert.equal(afterPrepare, false);
+                        if (id === '*') {
+                            resolve({
+                                pageletA: {
+                                    msg: 'Hello world!'
+                                }
+                            });
+                        }
+                        else {
+                            resolve({
+                                msg: 'Hello world!'
+                            });
+                        }
+                    });
+                });
+            });
+            res.bigpipe.addPagelet({
+                id: 'pageletA',
+                mode: 'async',
+                compiled: function () {
+                    return 'whatever';
+                }
+            });
+            res.bigpipe.prepareAllSources().then(function () {
+                afterPrepare = true;
+                assert.equal(res.bigpipe.pageletData.pageletA.msg, 'Hello world!');
+                res.end();
+            }).catch(console.error.bind(console));
+
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function (err, res) {
+                if (err) return done(err);
+                assert.equal(res.text, '');
                 done();
             });
     });
@@ -605,19 +789,19 @@ describe('Provider', function () {
         app.use(function (req, res) {
             var bigpipe = res.bigpipe;
 
+            bigpipe.bind('all', function (id, next) {
+                assert.equal(id, 'pageletA');
+                next(null, {
+                    content: 'test123'
+                });
+            });
+
             bigpipe.addPagelet({
                 id: 'pageletA',
                 mode: 'async',
                 compiled: function (locals) {
                     return locals.content;
                 }
-            });
-
-            bigpipe.bind('all', function (id, next) {
-                assert.equal(id, 'pageletA');
-                next(null, {
-                    content: 'test123'
-                });
             });
 
             bigpipe.pipe(res);
@@ -633,8 +817,7 @@ describe('Provider', function () {
             });
     });
 
-
-    it('prepare:source', function (done) {
+    it.skip('pagelet:source', function (done) {
         var app = express();
 
         app.use(middleware({
@@ -677,7 +860,7 @@ describe('Provider', function () {
     });
 
 
-    it('onPagelt', function (done) {
+    it.skip('onPagelt', function (done) {
         var app = express();
 
         app.use(middleware({
@@ -718,7 +901,7 @@ describe('Provider', function () {
             });
     });
 
-    it('onPageltXXX', function (done) {
+    it.skip('onPageltXXX', function (done) {
         var app = express();
 
         app.use(middleware({
@@ -767,7 +950,7 @@ describe('render error', function () {
 
         app.use(middleware({
             tpl: {
-                _default: '<%= this.id %>'
+                _default: '<%= this.html %>'
             }
         }));
 
@@ -780,8 +963,8 @@ describe('render error', function () {
                 locals: {
                     key: '123'
                 },
-                compiled: function () {
-                    return 'whatever';
+                compiled: function (locals) {
+                    return 'BigPipeFailed: ' + locals.BigPipeFailed;
                 }
             });
 
@@ -789,10 +972,10 @@ describe('render error', function () {
                 setter('error occer');
             });
 
-            bigpipe.on('error', function (reason) {
-                assert.equal(reason, 'error occer');
-                done();
-            });
+            // bigpipe.on('error', function (reason) {
+            //     assert.equal(reason, 'error occer');
+            //     done();
+            // });
 
             bigpipe.pipe(res);
         });
@@ -801,7 +984,8 @@ describe('render error', function () {
             .get('/')
             .end(function (err, res) {
                 if (err) return done(err);
-                done('error');
+                assert.equal(res.text, 'BigPipeFailed: true');
+                done();
             });
     });
 
@@ -1249,6 +1433,91 @@ describe('some incorrect usage.', function () {
             .end(function (err, res) {
                 if (err) return done(err);
                 assert.equal(res.text, 'pageletA');
+                done();
+            });
+    });
+
+    it('use a pagelet named all', function (done) {
+        var app = express();
+
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.id %>'
+            }
+        }));
+
+        app.use(function (req, res) {
+            var bigpipe = res.bigpipe;
+
+            bigpipe.on('pagelet:after', function (pagelet) {
+                pagelet.start();
+            });
+
+            bigpipe.on('error', function (e) {
+                assert.equal(e.message, 'all is a preserved word for pagelet');
+            });
+
+            bigpipe.addPagelet({
+                id: 'all',
+                mode: 'async',
+                locals: {
+                    key: '123'
+                },
+                compiled: function () {
+                    return 'whatever';
+                }
+            });
+
+
+            bigpipe.pipe(res);
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function (err, res) {
+                if (!err) return done();
+                done();
+            });
+    });
+
+    it('add a pagelet with null id', function (done) {
+        var app = express();
+
+        app.use(middleware({
+            tpl: {
+                _default: '<%= this.id %>'
+            }
+        }));
+
+        app.use(function (req, res) {
+            var bigpipe = res.bigpipe;
+
+            bigpipe.on('pagelet:after', function (pagelet) {
+                pagelet.start();
+            });
+
+            bigpipe.on('error', function (e) {
+                assert.equal(e.message, 'Id is required when add pagelet');
+            });
+
+            bigpipe.addPagelet({
+                mode: 'async',
+                locals: {
+                    key: '123'
+                },
+                compiled: function () {
+                    return 'whatever';
+                }
+            });
+
+
+            bigpipe.pipe(res);
+        });
+
+        request(app.listen())
+            .get('/')
+            .end(function (err, res) {
+                if (!err) return done();
                 done();
             });
     });
