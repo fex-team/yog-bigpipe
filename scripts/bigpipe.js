@@ -122,6 +122,28 @@
         }
     }
 
+    function saveLoadedRes() {
+        var domain = window.location.protocol + '//' + window.location.host;
+        var scripts = document.getElementsByTagName('script');
+        var links = document.getElementsByTagName('link');
+        for (var i = 0; i < scripts.length; i++) {
+            addRes(scripts[i].src);
+        }
+        for (var j = 0; j < links.length; j++) {
+            addRes(links[j].href);
+        }
+
+        function addRes(url) {
+            if (url) {
+                loadedRes[url] = true;
+                // 同时保存一份无domain的数据处理原始URL是绝对路径的情况
+                if (url.indexOf(domain) === 0) {
+                    loadedRes[url.replace(domain, '')] = true;
+                }
+            }
+        }
+    }
+
     // append style cod to dom.
     // 直接应用样式代码到页面。
     function appendStyle(code) {
@@ -170,6 +192,7 @@
         loadCss: loadCss,
         appendStyle: appendStyle,
         globalEval: globalEval,
+        saveLoadedRes: saveLoadedRes,
         ajax: ajax,
         mixin: mixin
     };
@@ -314,7 +337,7 @@
             var item = {
                 cssLoaded: false,
                 finish: function () {
-                    insertDom();
+                    insertDom(data);
                 }
             };
 
@@ -419,6 +442,7 @@
             pagelets = [],
             /* registered pagelets */
             currReqID = null,
+            resourceChecked = false,
             cache = {},
             globalBigPipeLoadIndex = 0;
 
@@ -429,6 +453,10 @@
             // - after chunk output pagelet.
             // - after async load quickling pagelet.
             onPageletArrive: function (obj) {
+                if (!resourceChecked) {
+                    Util.saveLoadedRes();
+                    resourceChecked = true;
+                }
                 currReqID = obj.reqID;
                 // console.log('arrive', obj.id);
                 this.trigger('pageletarrive', obj);
