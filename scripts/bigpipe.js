@@ -140,6 +140,16 @@
                 if (url.indexOf(domain) === 0) {
                     loadedRes[url.replace(domain, '')] = true;
                 }
+                // 支持 combo 的保存
+                var match = url.match(/(.*)\?\?(.*)/);
+                if (match && match.length === 3) {
+                    var origin = match[1];
+                    var combo = match[2] || '';
+                    var items = combo.split(',');
+                    for (var i = 0; i < items.length; i++) {
+                        loadedRes[origin + items[i]] = true;
+                    }
+                }
             }
         }
     }
